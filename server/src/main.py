@@ -55,6 +55,9 @@ def get_delay_probability(origin_id, dest_id, month):
     origin_id = int(origin_id)
     dest_id = int(dest_id)
 
+    # Log the parameters
+    print(f'Calculating delay probability for Origin ID: {origin_id}, Destination ID: {dest_id}, Month: {month}')
+
     # Load the flights
     flights = pd.read_csv('../data/flights.csv')
 
@@ -75,6 +78,8 @@ def get_delay_probability(origin_id, dest_id, month):
 
     # Predict the probability of delay
     probability = model.predict_proba(input)[:, 1][0]
+
+    print(f'Probability from model: {probability}')
 
     return {'probability': probability}
 

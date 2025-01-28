@@ -10,8 +10,8 @@ const FlightDelayCalculator: React.FC = () => {
     date: new Date()
   });
   const [probability, setProbability] = useState<string>('');
-  const [airports, setAirports] = useState<string[]>([]);
-  const [destinations, setDestinations] = useState<string[]>([]);
+  const [airports, setAirports] = useState<{ id: number, name: string }[]>([]);
+  const [destinations, setDestinations] = useState<{ id: number, name: string }[]>([]);
   const [loadingAirports, setLoadingAirports] = useState<boolean>(true);
   const [loadingDestinations, setLoadingDestinations] = useState<boolean>(false);
 
@@ -19,7 +19,11 @@ const FlightDelayCalculator: React.FC = () => {
     fetch('http://localhost:5000/airports/origin')
       .then(response => response.json())
       .then(data => {
-        setAirports(data.airports);
+        const formattedAirports = data.airports.map((airport: [number, string]) => ({
+          id: airport[0],
+          name: airport[1]
+        }));
+        setAirports(formattedAirports);
         setLoadingAirports(false);
       })
       .catch(error => {
@@ -46,7 +50,11 @@ const FlightDelayCalculator: React.FC = () => {
       fetch(`http://localhost:5000/airports/origin/${value}/destinations`)
         .then(response => response.json())
         .then(data => {
-          setDestinations(data.airports);
+          const formattedAirports = data.airports.map((airport: [number, string]) => ({
+            id: airport[0],
+            name: airport[1]
+          }));
+          setDestinations(formattedAirports);
           setLoadingDestinations(false);
         })
         .catch(error => {
@@ -63,32 +71,17 @@ const FlightDelayCalculator: React.FC = () => {
     }));
   };
 
-  const calculateProbability = (departure: string, arrival: string, date: Date): string => {
-    // Calculate base probability based on month (winter months have higher probability)
-    let monthFactor = 1;
+  const calculateProbability = async (departure: string, arrival: string, date: Date): Promise<string> => {
     const monthName = date.toLocaleString('default', { month: 'long' });
-    if (['December', 'January', 'February'].includes(monthName)) {
-      monthFactor = 1.5; // 50% higher chance in winter
-    } else if (['July', 'August'].includes(monthName)) {
-      monthFactor = 1.3; // 30% higher chance in peak summer
-    }
-
-    // Calculate probability based on airports (busier airports have higher chances)
-    let airportFactor = 1;
-    const busyAirports = ['JFK - New York', 'LAX - Los Angeles', 'ORD - Chicago', 'ATL - Atlanta'];
-    if (busyAirports.includes(departure) || busyAirports.includes(arrival)) {
-      airportFactor = 1.2;
-    }
-
-    // Base probability between 15-25%
-    const baseProb = Math.random() * 10 + 15;
-    return (baseProb * monthFactor * airportFactor).toFixed(1);
+    const response = await fetch(`http://localhost:5000/delay/${departure}/${arrival}/${monthName}`);
+    const data = await response.json();
+    return (data.probability * 100).toFixed(1);
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const { departure, arrival, date } = formData;
-    const finalProb = calculateProbability(departure, arrival, date);
+    const finalProb = await calculateProbability(departure, arrival, date);
     setProbability(finalProb);
   };
 
@@ -104,7 +97,7 @@ const FlightDelayCalculator: React.FC = () => {
         <div className="p-6">
           {loadingAirports ? (
             <div className="flex justify-center items-center">
-              <div className="loader"></div>
+                <div className="loader flex justify-center items-center"></div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -123,14 +116,14 @@ const FlightDelayCalculator: React.FC = () => {
                   >
                     <option value="">Select departure airport</option>
                     {airports.map(airport => (
-                      <option key={airport} value={airport}>{airport}</option>
+                      <option key={airport.id} value={airport.id}>{airport.name}</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium mb-2">
-                    <Plane className="h-4 w-4 transform rotate-90" />
+                    <Plane className="h-4 w-4 transform -rotate-90" />
                     Arrival Airport
                   </label>
                   {loadingDestinations ? (
@@ -147,7 +140,7 @@ const FlightDelayCalculator: React.FC = () => {
                     >
                       <option value="">Select arrival airport</option>
                       {destinations.map(airport => (
-                        <option key={airport} value={airport}>{airport}</option>
+                        <option key={airport.id} value={airport.id}>{airport.name}</option>
                       ))}
                     </select>
                   )}
