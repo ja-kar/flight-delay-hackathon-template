@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Plane, Clock, Calendar } from 'lucide-react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
-const FlightDelayCalculator = () => {
+const FlightDelayCalculator: React.FC = () => {
   const [formData, setFormData] = useState({
     departure: '',
     arrival: '',
-    month: ''
+    date: new Date()
   });
   const [probability, setProbability] = useState<string>('');
   const [airports, setAirports] = useState<string[]>([]);
@@ -29,7 +31,7 @@ const FlightDelayCalculator = () => {
   interface FormData {
     departure: string;
     arrival: string;
-    month: string;
+    date: Date;
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -54,12 +56,20 @@ const FlightDelayCalculator = () => {
     }
   };
 
-  const calculateProbability = (departure: string, arrival: string, month: string): string => {
+  const handleDateChange = (date: Date) => {
+    setFormData((prev: FormData) => ({
+      ...prev,
+      date: date
+    }));
+  };
+
+  const calculateProbability = (departure: string, arrival: string, date: Date): string => {
     // Calculate base probability based on month (winter months have higher probability)
     let monthFactor = 1;
-    if (['December', 'January', 'February'].includes(month)) {
+    const monthName = date.toLocaleString('default', { month: 'long' });
+    if (['December', 'January', 'February'].includes(monthName)) {
       monthFactor = 1.5; // 50% higher chance in winter
-    } else if (['July', 'August'].includes(month)) {
+    } else if (['July', 'August'].includes(monthName)) {
       monthFactor = 1.3; // 30% higher chance in peak summer
     }
 
@@ -77,8 +87,8 @@ const FlightDelayCalculator = () => {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const { departure, arrival, month } = formData;
-    const finalProb = calculateProbability(departure, arrival, month);
+    const { departure, arrival, date } = formData;
+    const finalProb = calculateProbability(departure, arrival, date);
     setProbability(finalProb);
   };
 
@@ -146,20 +156,14 @@ const FlightDelayCalculator = () => {
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium mb-2">
                     <Calendar className="h-4 w-4" />
-                    Month of Travel
+                    Date of Travel
                   </label>
-                  <select
-                    name="month"
-                    value={formData.month}
-                    onChange={handleInputChange}
-                    required
+                  <DatePicker
+                    selected={formData.date}
+                    onChange={handleDateChange}
+                    dateFormat="MM/dd/yyyy"
                     className="w-full p-2 border rounded-md bg-white"
-                  >
-                    <option value="">Select month</option>
-                    {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(month => (
-                      <option key={month} value={month}>{month}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
               </div>
 
