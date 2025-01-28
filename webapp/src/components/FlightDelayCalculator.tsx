@@ -32,15 +32,21 @@ const FlightDelayCalculator = () => {
     'September', 'October', 'November', 'December'
   ];
 
-  const handleInputChange = (e) => {
+  interface FormData {
+    departure: string;
+    arrival: string;
+    month: string;
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev: FormData) => ({
       ...prev,
       [name]: value
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     // Calculate base probability based on month (winter months have higher probability)
