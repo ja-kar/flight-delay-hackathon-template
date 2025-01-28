@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plane, Clock, Calendar } from 'lucide-react';
 
 const FlightDelayCalculator = () => {
@@ -8,29 +8,15 @@ const FlightDelayCalculator = () => {
     month: ''
   });
   const [probability, setProbability] = useState<string>('');
+  const [airports, setAirports] = useState<string[]>([]);
+  const [destinations, setDestinations] = useState<string[]>([]);
 
-
-  // TODO: Get airports from API
-  // Sample airports for demonstration
-  const airports = [
-    'JFK - New York',
-    'LAX - Los Angeles',
-    'ORD - Chicago',
-    'DFW - Dallas',
-    'ATL - Atlanta',
-    'SFO - San Francisco',
-    'MIA - Miami',
-    'SEA - Seattle',
-    'DEN - Denver',
-    'BOS - Boston'
-  ];
-
-  // Months array
-  const months = [
-    'January', 'February', 'March', 'April',
-    'May', 'June', 'July', 'August',
-    'September', 'October', 'November', 'December'
-  ];
+  useEffect(() => {
+    fetch('http://localhost:5000/airports/origin')
+      .then(response => response.json())
+      .then(data => setAirports(data.airports))
+      .catch(error => console.error('Error fetching airports:', error));
+  }, []);
 
   interface FormData {
     departure: string;
@@ -44,30 +30,40 @@ const FlightDelayCalculator = () => {
       ...prev,
       [name]: value
     }));
+
+    if (name === 'departure') {
+      fetch(`http://localhost:5000/airports/origin/${value}/destinations`)
+        .then(response => response.json())
+        .then(data => setDestinations(data.airports))
+        .catch(error => console.error('Error fetching destinations:', error));
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
+  const calculateProbability = (departure: string, arrival: string, month: string): string => {
     // Calculate base probability based on month (winter months have higher probability)
     let monthFactor = 1;
-    if (['December', 'January', 'February'].includes(formData.month)) {
+    if (['December', 'January', 'February'].includes(month)) {
       monthFactor = 1.5; // 50% higher chance in winter
-    } else if (['July', 'August'].includes(formData.month)) {
+    } else if (['July', 'August'].includes(month)) {
       monthFactor = 1.3; // 30% higher chance in peak summer
     }
 
     // Calculate probability based on airports (busier airports have higher chances)
     let airportFactor = 1;
     const busyAirports = ['JFK - New York', 'LAX - Los Angeles', 'ORD - Chicago', 'ATL - Atlanta'];
-    if (busyAirports.includes(formData.departure) || busyAirports.includes(formData.arrival)) {
+    if (busyAirports.includes(departure) || busyAirports.includes(arrival)) {
       airportFactor = 1.2;
     }
 
     // Base probability between 15-25%
     const baseProb = Math.random() * 10 + 15;
-    const finalProb = (baseProb * monthFactor * airportFactor).toFixed(1);
-    
+    return (baseProb * monthFactor * airportFactor).toFixed(1);
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const { departure, arrival, month } = formData;
+    const finalProb = calculateProbability(departure, arrival, month);
     setProbability(finalProb);
   };
 
@@ -115,7 +111,7 @@ const FlightDelayCalculator = () => {
                   className="w-full p-2 border rounded-md bg-white"
                 >
                   <option value="">Select arrival airport</option>
-                  {airports.filter(airport => airport !== formData.departure).map(airport => (
+                  {destinations.map(airport => (
                     <option key={airport} value={airport}>{airport}</option>
                   ))}
                 </select>
@@ -134,7 +130,7 @@ const FlightDelayCalculator = () => {
                   className="w-full p-2 border rounded-md bg-white"
                 >
                   <option value="">Select month</option>
-                  {months.map(month => (
+                  {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(month => (
                     <option key={month} value={month}>{month}</option>
                   ))}
                 </select>
