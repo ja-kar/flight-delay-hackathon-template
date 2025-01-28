@@ -10,12 +10,20 @@ const FlightDelayCalculator = () => {
   const [probability, setProbability] = useState<string>('');
   const [airports, setAirports] = useState<string[]>([]);
   const [destinations, setDestinations] = useState<string[]>([]);
+  const [loadingAirports, setLoadingAirports] = useState<boolean>(true);
+  const [loadingDestinations, setLoadingDestinations] = useState<boolean>(false);
 
   useEffect(() => {
     fetch('http://localhost:5000/airports/origin')
       .then(response => response.json())
-      .then(data => setAirports(data.airports))
-      .catch(error => console.error('Error fetching airports:', error));
+      .then(data => {
+        setAirports(data.airports);
+        setLoadingAirports(false);
+      })
+      .catch(error => {
+        console.error('Error fetching airports:', error);
+        setLoadingAirports(false);
+      });
   }, []);
 
   interface FormData {
@@ -32,10 +40,17 @@ const FlightDelayCalculator = () => {
     }));
 
     if (name === 'departure') {
+      setLoadingDestinations(true);
       fetch(`http://localhost:5000/airports/origin/${value}/destinations`)
         .then(response => response.json())
-        .then(data => setDestinations(data.airports))
-        .catch(error => console.error('Error fetching destinations:', error));
+        .then(data => {
+          setDestinations(data.airports);
+          setLoadingDestinations(false);
+        })
+        .catch(error => {
+          console.error('Error fetching destinations:', error);
+          setLoadingDestinations(false);
+        });
     }
   };
 
@@ -77,73 +92,85 @@ const FlightDelayCalculator = () => {
           </h2>
         </div>
         <div className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4">
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium mb-2">
-                  <Plane className="h-4 w-4" />
-                  Departure Airport
-                </label>
-                <select
-                  name="departure"
-                  value={formData.departure}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full p-2 border rounded-md bg-white"
-                >
-                  <option value="">Select departure airport</option>
-                  {airports.map(airport => (
-                    <option key={airport} value={airport}>{airport}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium mb-2">
-                  <Plane className="h-4 w-4 transform rotate-90" />
-                  Arrival Airport
-                </label>
-                <select
-                  name="arrival"
-                  value={formData.arrival}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full p-2 border rounded-md bg-white"
-                >
-                  <option value="">Select arrival airport</option>
-                  {destinations.map(airport => (
-                    <option key={airport} value={airport}>{airport}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium mb-2">
-                  <Calendar className="h-4 w-4" />
-                  Month of Travel
-                </label>
-                <select
-                  name="month"
-                  value={formData.month}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full p-2 border rounded-md bg-white"
-                >
-                  <option value="">Select month</option>
-                  {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(month => (
-                    <option key={month} value={month}>{month}</option>
-                  ))}
-                </select>
-              </div>
+          {loadingAirports ? (
+            <div className="flex justify-center items-center">
+              <div className="loader"></div>
             </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium mb-2">
+                    <Plane className="h-4 w-4" />
+                    Departure Airport
+                  </label>
+                  <select
+                    name="departure"
+                    value={formData.departure}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-2 border rounded-md bg-white"
+                  >
+                    <option value="">Select departure airport</option>
+                    {airports.map(airport => (
+                      <option key={airport} value={airport}>{airport}</option>
+                    ))}
+                  </select>
+                </div>
 
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Calculate Probability
-            </button>
-          </form>
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium mb-2">
+                    <Plane className="h-4 w-4 transform rotate-90" />
+                    Arrival Airport
+                  </label>
+                  {loadingDestinations ? (
+                    <div className="flex justify-center items-center">
+                      <div className="loader"></div>
+                    </div>
+                  ) : (
+                    <select
+                      name="arrival"
+                      value={formData.arrival}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full p-2 border rounded-md bg-white"
+                    >
+                      <option value="">Select arrival airport</option>
+                      {destinations.map(airport => (
+                        <option key={airport} value={airport}>{airport}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium mb-2">
+                    <Calendar className="h-4 w-4" />
+                    Month of Travel
+                  </label>
+                  <select
+                    name="month"
+                    value={formData.month}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-2 border rounded-md bg-white"
+                  >
+                    <option value="">Select month</option>
+                    {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(month => (
+                      <option key={month} value={month}>{month}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Calculate Probability
+              </button>
+            </form>
+          )}
 
           {probability !== null && (
             <div className="mt-6 p-4 bg-gray-50 rounded-md">
