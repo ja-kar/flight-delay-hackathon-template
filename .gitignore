@@ -377,3 +377,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+data/flight_delay_model.pkl
